@@ -87,7 +87,6 @@
             border-radius: 8px; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;
         }
         .btn-purple { background: var(--purple); }
-        .btn-dark { background: #1e293b; border: 1px solid #334155; color: #e2e8f0; }
 
         /* AI Writer Box */
         .ai-writer-box {
@@ -108,7 +107,7 @@
             border-radius: 10px; padding: 11px; font-size: 0.96rem; line-height: 1.5; resize: vertical; outline: none;
         }
 
-        /* Mode Tabs (Single vs Dual Dialogue) */
+        /* Mode Tabs */
         .mode-tabs {
             display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px;
         }
@@ -365,7 +364,7 @@
     let isBroadcasting = false;
     let currentRepeat = 0;
     let targetRepeats = 1;
-    let currentVoiceMode = 'male'; // 'male' | 'female' | 'dual'
+    let currentVoiceMode = 'male';
     let customBgmArrayBuffer = null;
 
     let cachedMixBuffer = null;
@@ -467,7 +466,7 @@
         reader.readAsArrayBuffer(file);
     }
 
-    // 1. AI Auto Script Writer
+    // 1. AI Auto Script Writer (Updated to gemini-3.8-flash)
     async function generateAiScript() {
         const topic = document.getElementById('aiTopicInput').value.trim();
         if (!topic) {
@@ -490,7 +489,7 @@
             : `নিচের বিষয়ের ওপর ভিত্তি করে মাইকে বা অডিও ব্রডকাস্টে প্রচারের জন্য একটি পেশাদার, শ্রুতিমধুর ও শুদ্ধ বাংলায় ৩ থেকে ৪ বাক্যের ঘোষণার স্ক্রিপ্ট লিখে দিন। কোনো অতিরিক্ত ভূমিকা বা শিরোনাম দেবেন না, শুধু পড়ার উপযোগী মূল লেখাটি দিন।\n\nবিষয়: ${topic}`;
 
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -511,7 +510,6 @@
         }
     }
 
-    // Decode Gemini 24kHz PCM (or WAV) base64 into Float32Array at 24000Hz
     function base64PcmToFloat32(base64Data, mimeType) {
         const binaryString = atob(base64Data);
         const len = binaryString.length;
@@ -561,7 +559,6 @@
         return base64PcmToFloat32(part.data, part.mimeType);
     }
 
-    // Generate Voice Float32Array (supports Single Male, Single Female, and Dual Male+Female Dialogue)
     async function buildVoiceTrackFloat32(text, apiKey) {
         const style = document.getElementById('voiceStyle').value;
 
@@ -570,13 +567,12 @@
             return await fetchSingleTtsFloat32(text, voiceName, style, apiKey);
         }
 
-        // Dual Dialogue Mode: Parse lines starting with পুরুষ: or নারী: (or alternate automatically)
         const maleId = document.getElementById('dualMaleArtist').value;
         const femaleId = document.getElementById('dualFemaleArtist').value;
         const rawLines = text.split(/\n+/).map(l => l.trim()).filter(Boolean);
 
         const segments = [];
-        const pauseSamples = Math.floor(24000 * 0.35); // 0.35s natural pause between speakers
+        const pauseSamples = Math.floor(24000 * 0.35);
         let autoTurn = 0;
 
         for (let line of rawLines) {
@@ -609,7 +605,6 @@
         return merged;
     }
 
-    // Build Complete Studio-Mixed AudioBuffer (Chime + Auto-Ducking BGM + Voice)
     async function getStudioMixedBuffer() {
         const text = document.getElementById('announceText').value.trim();
         const apiKey = localStorage.getItem('gemini_tts_api_key');
@@ -639,7 +634,6 @@
 
         const offlineCtx = new OfflineAudioContext(1, totalSamples, sampleRate);
 
-        // 1. Studio Ding-Dong Chime
         if (useChime) {
             const scheduleChimeTone = (freq, start, dur) => {
                 const osc = offlineCtx.createOscillator();
@@ -654,11 +648,10 @@
                 osc.start(start);
                 osc.stop(start + dur);
             };
-            scheduleChimeTone(659.25, 0.05, 0.65); // E5
-            scheduleChimeTone(523.25, 0.60, 0.90); // C5
+            scheduleChimeTone(659.25, 0.05, 0.65);
+            scheduleChimeTone(523.25, 0.60, 0.90);
         }
 
-        // 2. Voice Track
         const voiceBuffer = offlineCtx.createBuffer(1, voiceFloat.length, sampleRate);
         voiceBuffer.copyToChannel(voiceFloat, 0);
         const voiceSource = offlineCtx.createBufferSource();
@@ -666,7 +659,6 @@
         voiceSource.connect(offlineCtx.destination);
         voiceSource.start(voiceStart);
 
-        // 3. Background Music with Auto-Ducking
         if (bgmMode !== 'none') {
             const bgmMasterGain = offlineCtx.createGain();
             const fullVol = 0.22;
@@ -698,7 +690,6 @@
                 bgmSrc.start(0);
                 bgmSrc.stop(totalDuration);
             } else {
-                // Built-in warm studio broadcast chord progression
                 const chords = [261.63, 329.63, 392.00, 349.23];
                 let t = 0;
                 let idx = 0;
@@ -726,7 +717,6 @@
         return renderedBuffer;
     }
 
-    // Encode AudioBuffer to 16-bit PCM WAV Blob
     function audioBufferToWavBlob(buffer) {
         const numChannels = 1;
         const sampleRate = buffer.sampleRate;
@@ -761,7 +751,6 @@
         return new Blob([wavBuffer], { type: 'audio/wav' });
     }
 
-    // Live Broadcast Playback
     async function startBroadcast() {
         const text = document.getElementById('announceText').value.trim();
         if (!text) {
@@ -840,7 +829,6 @@
         badge.innerText = '⚫ স্ট্যান্ডবাই (প্রস্তুত)';
     }
 
-    // Download Full Mixed WAV
     async function downloadMixedWav() {
         const text = document.getElementById('announceText').value.trim();
         if (!text) {
@@ -875,7 +863,6 @@
         }
     }
 
-    // 4. Auto-Scheduler Timer
     function toggleSchedule() {
         const timeVal = document.getElementById('scheduleTime').value;
         const btn = document.getElementById('schedToggleBtn');
@@ -918,7 +905,6 @@
         }
     }
 
-    // 5. Saved Presets Library
     function getPresets() {
         try {
             return JSON.parse(localStorage.getItem('broadcast_studio_presets') || '[]');

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>স্মার্ট ব্রডকাস্ট ও মাইকিং স্টুডিও প্রো</title>
+    <style>
+        :root {
+            --bg: #090d16;
+            --card: #111827;
+            --primary: #f59e0b;
+            --primary-glow: rgba(245, 158, 11, 0.3);
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --border: #1e293b;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body {
+            margin: 0; padding: 0; background: var(--bg); color: var(--text);
+            padding-bottom: 35px;
+        }
+
+        /* Header */
+        header {
+            background: var(--card); padding: 16px; text-align: center;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50;
+        }
+        header h1 { margin: 0; font-size: 1.2rem; color: var(--primary); letter-spacing: 0.5px; }
+        header p { margin: 4px 0 0; font-size: 0.8rem; color: var(--muted); }
+
+        .container { max-width: 550px; margin: 0 auto; padding: 14px; }
+
+        /* Visualizer / On-Air Status */
+        .on-air-box {
+            background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+            padding: 16px; text-align: center; margin-bottom: 14px;
+        }
+        .on-air-badge {
+            display: inline-block; padding: 5px 14px; border-radius: 20px;
+            font-size: 0.8rem; font-weight: bold; background: #1e293b; color: var(--muted);
+            margin-bottom: 12px; transition: 0.3s;
+        }
+        .on-air-badge.live {
+            background: var(--danger); color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+        }
+        .bars {
+            display: flex; justify-content: center; align-items: flex-end;
+            gap: 5px; height: 32px;
+        }
+        .bar {
+            width: 6px; height: 8px; background: var(--primary); border-radius: 3px;
+            transition: height 0.15s ease;
+        }
+        .live .bar { animation: soundWave 0.6s infinite alternate; }
+        .live .bar:nth-child(2) { animation-delay: 0.1s; }
+        .live .bar:nth-child(3) { animation-delay: 0.25s; }
+        .live .bar:nth-child(4) { animation-delay: 0.15s; }
+        .live .bar:nth-child(5) { animation-delay: 0.3s; }
+        .live .bar:nth-child(6) { animation-delay: 0.05s; }
+        @keyframes soundWave { 0% { height: 6px; } 100% { height: 30px; } }
+
+        /* Cards & Inputs */
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 14px; margin-bottom: 14px;
+        }
+        .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 0.85rem; font-weight: 600; color: #cbd5e1; }
+        
+        .templates { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; }
+        .tpl-btn {
+            background: #1e293b; color: #e2e8f0; border: 1px solid #334155;
+            padding: 5px 10px; border-radius: 16px; font-size: 0.75rem; white-space: nowrap; cursor: pointer;
+        }
+
+        textarea {
+            width: 100%; background: var(--bg); color: white; border: 1px solid #334155;
+            border-radius: 10px; padding: 12px; font-size: 1rem; line-height: 1.5; resize: vertical; outline: none;
+        }
+        textarea:focus { border-color: var(--primary); }
+
+        /* Gender Selector Tabs */
+        .gender-tabs {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+        }
+        .gender-btn {
+            background: var(--bg); color: var(--muted); border: 1px solid #334155;
+            padding: 10px; border-radius: 10px; font-size: 0.9rem; font-weight: bold;
+            cursor: pointer; transition: 0.2s;
+        }
+        .gender-btn.active {
+            background: rgba(245, 158, 11, 0.15); color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        /* Controls Grid */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+        .ctrl-box { background: var(--bg); padding: 10px; border-radius: 10px; border: 1px solid #1e293b; }
+        .ctrl-box span { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 4px; }
+        input[type="range"] { width: 100%; accent-color: var(--primary); }
+        select {
+            width: 100%; background: var(--bg); color: white; border: 1px solid #334155;
+            padding: 8px; border-radius: 8px; font-size: 0.85rem; outline: none;
+        }
+
+        /* BGM Section */
+        .bgm-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .file-btn {
+            background: #1e293b; color: white; border: 1px dashed #475569;
+            padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; flex: 1; text-align: center;
+        }
+
+        /* Main Action Buttons */
+        .main-btns { display: flex; gap: 10px; margin-top: 14px; }
+        .btn-broadcast {
+            flex: 2; background: var(--primary); color: #000; border: none;
+            padding: 14px; border-radius: 12px; font-size: 1.02rem; font-weight: bold;
+            cursor: pointer; box-shadow: 0 4px 15px var(--primary-glow);
+        }
+        .btn-stop {
+            flex: 1; background: var(--danger); color: white; border: none;
+            padding: 14px; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer;
+        }
+        .btn-download {
+            width: 100%; margin-top: 10px; background: var(--success); color: white;
+            border: none; padding: 13px; border-radius: 12px; font-size: 0.98rem;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+        }
+        .btn-download:disabled {
+            background: #334155; color: #94a3b8; cursor: not-allowed;
+        }
+        .checkbox-row {
+            display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #cbd5e1; margin-top: 8px;
+        }
+        .hint-text {
+            font-size: 0.75rem; color: var(--muted); text-align: center; margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🎙️ স্মার্ট অডিও ব্রডকাস্ট স্টুডিও প্রো</h1>
+    <p>পুরুষ/নারী কণ্ঠ, ব্যাকগ্রাউন্ড মিউজিক ও অডিও ডাউনলোড</p>
+</header>
+
+<div class="container">
+
+    <!-- Live Visualizer -->
+    <div class="on-air-box" id="visualizerBox">
+        <div class="on-air-badge" id="statusBadge">⚫ স্ট্যান্ডবাই (প্রস্তুত)</div>
+        <div class="bars">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        </div>
+    </div>
+
+    <!-- Script Box -->
+    <div class="card">
+        <div class="label-row">
+            <label>ঘোষণার বিবরণ লিখুন:</label>
+            <button class="tpl-btn" onclick="clearText()">মুছুন</button>
+        </div>
+        
+        <!-- Quick Templates -->
+        <div class="templates">
+            <button class="tpl-btn" onclick="setTemplate('inst')">🏫 প্রতিষ্ঠান নোটিশ</button>
+            <button class="tpl-btn" onclick="setTemplate('event')">🎉 অনুষ্ঠান ঘোষণা</button>
+            <button class="tpl-btn" onclick="setTemplate('offer')">📢 প্রচারণা / অফার</button>
+            <button class="tpl-btn" onclick="setTemplate('urgent')">🚨 জরুরি দৃষ্টি আকর্ষণ</button>
+        </div>
+
+        <textarea id="announceText" rows="4" placeholder="এখানে আপনার ঘোষণাটি বাংলায় লিখুন...">সুধী, আপনাদের সদয় অবগতির জন্য জানানো যাচ্ছে যে, আমাদের প্রতিষ্ঠানের কার্যক্রম এখনই শুরু হতে যাচ্ছে। অনুগ্রহ করে সবাই নিজ নিজ আসন গ্রহণ করুন। ধন্যবাদ।</textarea>
+    </div>
+
+    <!-- Voice & Repeat Controls -->
+    <div class="card">
+        <label style="display:block; margin-bottom:8px;">কণ্ঠ নির্বাচন করুন:</label>
+        <div class="gender-tabs">
+            <button class="gender-btn active" id="btnMale" onclick="selectGender('male')">👨 পুরুষ কণ্ঠ (Male)</button>
+            <button class="gender-btn" id="btnFemale" onclick="selectGender('female')">👩 নারী কণ্ঠ (Female)</button>
+        </div>
+
+        <div class="grid-2">
+            <div class="ctrl-box">
+                <span>গলার গাম্ভীর্য (Pitch): <b id="pitchVal">0.8</b></span>
+                <input type="range" id="pitchRange" min="0.5" max="1.4" step="0.05" value="0.8" oninput="updateLabels()">
+            </div>
+            <div class="ctrl-box">
+                <span>বলার গতি (Speed): <b id="rateVal">0.9</b></span>
+                <input type="range" id="rateRange" min="0.6" max="1.4" step="0.05" value="0.9" oninput="updateLabels()">
+            </div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom: 0;">
+            <div class="ctrl-box">
+                <span>কতবার ঘোষণা হবে:</span>
+                <select id="repeatCount">
+                    <option value="1">১ বার</option>
+                    <option value="2" selected>২ বার (আদর্শ)</option>
+                    <option value="3">৩ বার</option>
+                    <option value="999">একটানা চলবে (Loop)</option>
+                </select>
+            </div>
+            <div class="ctrl-box">
+                <span>ব্যাকগ্রাউন্ড মিউজিক:</span>
+                <select id="bgmMode" onchange="handleBgmSelect()">
+                    <option value="synth">বিল্ট-ইন স্টুডিও মিউজিক</option>
+                    <option value="custom">ফোন থেকে MP3 দিন</option>
+                    <option value="none">মিউজিক বন্ধ রাখুন</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Custom Audio Upload -->
+        <div id="customAudioBox" class="bgm-row" style="display:none;">
+            <label class="file-btn">
+                🎵 ফোনের অডিও ফাইল বেছে নিন
+                <input type="file" id="bgmFile" accept="audio/*" style="display:none;" onchange="loadCustomAudio(event)">
+            </label>
+            <span id="fileName" style="font-size:0.75rem; color:#94a3b8;">ফাইল নেই</span>
+        </div>
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="useChime" checked style="width:18px; height:18px; accent-color:var(--primary);">
+            <label for="useChime">ঘোষণার আগে স্টুডিও বেল (Ding-Dong) বাজবে</label>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="main-btns">
+        <button class="btn-broadcast" onclick="startBroadcast()">📢 প্রচার শুরু করুন</button>
+        <button class="btn-stop" onclick="stopBroadcast()">⏹️ থামুন</button>
+    </div>
+
+    <!-- Download Button -->
+    <button class="btn-download" id="downloadBtn" onclick="downloadAnnouncementAudio()">
+        📥 অডিও ফাইল ডাউনলোড করুন (MP3/WAV)
+    </button>
+    <p class="hint-text" id="dlStatus">টিপস: সরাসরি লাইভ প্রচারের পাশাপাশি অডিও ফাইলটি ডাউনলোড করে পরেও বাজাতে পারবেন।</p>
+
+</div>
+
+<audio id="customAudioPlayer" loop></audio>
+
+<script>
+    let audioCtx = null;
+    let synthInterval = null;
+    let isBroadcasting = false;
+    let currentRepeat = 0;
+    let targetRepeats = 1;
+    let selectedGender = 'male';
+
+    const templates = {
+        inst: "আসসালামু আলাইকুম। সকল শিক্ষার্থী ও অভিভাবকদের অবগতির জন্য জানানো যাচ্ছে যে, আগামীকাল সকাল ৯টা থেকে যথানিয়মে ক্লাস শুরু হবে। সবাইকে যথাসময়ে উপস্থিত থাকার জন্য অনুরোধ করা হলো।",
+        event: "সুধী মণ্ডলী, আর কিছুক্ষণের মধ্যেই আমাদের আজকের বিশেষ অনুষ্ঠান শুরু হতে যাচ্ছে। সম্মানিত অতিথি ও দর্শকবৃন্দকে আসন গ্রহণ করার জন্য বিনীত অনুরোধ জানানো হচ্ছে।",
+        offer: "সুবর্ণ সুযোগ! সুবর্ণ সুযোগ! আমাদের প্রতিষ্ঠানে চলছে বিশেষ ছাড়। আজই চলে আসুন এবং লুফে নিন আপনার পছন্দের সেরা সেবাটি। বিস্তারিত জানতে যোগাযোগ করুন।",
+        urgent: "জরুরি দৃষ্টি আকর্ষণ! অনুগ্রহ করে সবাই শান্ত থাকুন এবং নির্ধারিত নিয়ম মেনে চলুন। যেকোনো প্রয়োজনে আমাদের স্বেচ্ছাসেবক টিমের সাথে যোগাযোগ করুন।"
+    };
+
+    function selectGender(gender) {
+        selectedGender = gender;
+        document.getElementById('btnMale').classList.toggle('active', gender === 'male');
+        document.getElementById('btnFemale').classList.toggle('active', gender === 'female');
+
+        // Auto-adjust pitch for realistic Male vs Female announcer tone
+        const pitchSlider = document.getElementById('pitchRange');
+        if (gender === 'male') {
+            pitchSlider.value = 0.78;
+        } else {
+            pitchSlider.value = 1.15;
+        }
+        updateLabels();
+    }
+
+    function setTemplate(key) {
+        document.getElementById('announceText').value = templates[key];
+    }
+
+    function clearText() {
+        document.getElementById('announceText').value = '';
+    }
+
+    function updateLabels() {
+        document.getElementById('pitchVal').innerText = document.getElementById('pitchRange').value;
+        document.getElementById('rateVal').innerText = document.getElementById('rateRange').value;
+    }
+
+    function handleBgmSelect() {
+        const mode = document.getElementById('bgmMode').value;
+        document.getElementById('customAudioBox').style.display = mode === 'custom' ? 'flex' : 'none';
+    }
+
+    function loadCustomAudio(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            document.getElementById('customAudioPlayer').src = url;
+            document.getElementById('fileName').innerText = file.name.slice(0, 15) + '...';
+        }
+    }
+
+    function initAudioContext() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playChime() {
+        return new Promise((resolve) => {
+            if (!document.getElementById('useChime').checked) {
+                resolve();
+                return;
+            }
+            initAudioContext();
+            const now = audioCtx.currentTime;
+            playTone(659.25, now, 0.6, 0.3);
+            playTone(523.25, now + 0.55, 0.9, 0.3);
+            setTimeout(resolve, 1400);
+        });
+    }
+
+    function playTone(freq, startTime, duration, vol) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.001, startTime);
+        gain.gain.exponentialRampToValueAtTime(vol, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    }
+
+    function startBackgroundMusic() {
+        const mode = document.getElementById('bgmMode').value;
+        if (mode === 'none') return;
+
+        if (mode === 'custom') {
+            const player = document.getElementById('customAudioPlayer');
+            if (player.src) {
+                player.volume = 0.25;
+                player.play().catch(() => {});
+            }
+            return;
+        }
+
+        initAudioContext();
+        const chords = [261.63, 329.63, 392.00, 329.63];
+        let step = 0;
+        synthInterval = setInterval(() => {
+            if (!isBroadcasting) return;
+            const now = audioCtx.currentTime;
+            playTone(chords[step % chords.length], now, 1.4, 0.06);
+            step++;
+        }, 1200);
+    }
+
+    function stopBackgroundMusic() {
+        if (synthInterval) {
+            clearInterval(synthInterval);
+            synthInterval = null;
+        }
+        const player = document.getElementById('customAudioPlayer');
+        player.pause();
+        player.currentTime = 0;
+    }
+
+    function getBestBengaliVoice() {
+        const voices = window.speechSynthesis.getVoices();
+        const bnVoices = voices.filter(v => v.lang.includes('bn'));
+        if (bnVoices.length === 0) return null;
+
+        if (selectedGender === 'male') {
+            const male = bnVoices.find(v => /male|man|ravi|hemant|bangla.*1/i.test(v.name));
+            return male || bnVoices[0];
+        } else {
+            const female = bnVoices.find(v => /female|woman|kalpana|tanishaa|bangla.*2/i.test(v.name));
+            return female || bnVoices[bnVoices.length - 1];
+        }
+    }
+
+    async function startBroadcast() {
+        const text = document.getElementById('announceText').value.trim();
+        if (!text) {
+            alert('দয়া করে ঘোষণার লেখাটি লিখুন!');
+            return;
+        }
+
+        stopBroadcast();
+        isBroadcasting = true;
+        currentRepeat = 0;
+        targetRepeats = parseInt(document.getElementById('repeatCount').value);
+
+        document.getElementById('visualizerBox').classList.add('live');
+        const badge = document.getElementById('statusBadge');
+        badge.classList.add('live');
+        badge.innerText = '🔴 ON AIR (প্রচার চলছে)';
+
+        startBackgroundMusic();
+        await playChime();
+        if (isBroadcasting) {
+            speakLoop(text);
+        }
+    }
+
+    function speakLoop(text) {
+        if (!isBroadcasting || currentRepeat >= targetRepeats) {
+            stopBroadcast();
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'bn-BD';
+        utterance.pitch = parseFloat(document.getElementById('pitchRange').value);
+        utterance.rate = parseFloat(document.getElementById('rateRange').value);
+
+        const chosenVoice = getBestBengaliVoice();
+        if (chosenVoice) utterance.voice = chosenVoice;
+
+        utterance.onend = () => {
+            currentRepeat++;
+            if (isBroadcasting && currentRepeat < targetRepeats) {
+                setTimeout(() => speakLoop(text), 1500);
+            } else {
+                stopBroadcast();
+            }
+        };
+
+        utterance.onerror = () => {
+            stopBroadcast();
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    function stopBroadcast() {
+        isBroadcasting = false;
+        window.speechSynthesis.cancel();
+        stopBackgroundMusic();
+
+        document.getElementById('visualizerBox').classList.remove('live');
+        const badge = document.getElementById('statusBadge');
+        badge.classList.remove('live');
+        badge.innerText = '⚫ স্ট্যান্ডবাই (প্রস্তুত)';
+    }
+
+    // Download Audio Generator (Splits Bengali text into clean TTS audio chunks and merges into downloadable MP3)
+    async function downloadAnnouncementAudio() {
+        const text = document.getElementById('announceText').value.trim();
+        if (!text) {
+            alert('ডাউনলোড করার জন্য আগে ঘোষণার লেখাটি লিখুন!');
+            return;
+        }
+
+        const dlBtn = document.getElementById('downloadBtn');
+        const dlStatus = document.getElementById('dlStatus');
+        dlBtn.disabled = true;
+        dlBtn.innerText = '⏳ অডিও ফাইল তৈরি হচ্ছে...';
+        dlStatus.innerText = 'অনুগ্রহ করে কয়েক সেকেন্ড অপেক্ষা করুন...';
+
+        try {
+            // Split text into chunks under 180 chars for clean TTS generation
+            const sentences = text.match(/[^।!?\.]+[।!?\.]*/g) || [text];
+            const chunks = [];
+            let currentChunk = '';
+
+            for (let s of sentences) {
+                s = s.trim();
+                if (!s) continue;
+                if ((currentChunk + ' ' + s).length <= 180) {
+                    currentChunk = (currentChunk + ' ' + s).trim();
+                } else {
+                    if (currentChunk) chunks.push(currentChunk);
+                    currentChunk = s.slice(0, 180);
+                }
+            }
+            if (currentChunk) chunks.push(currentChunk);
+
+            const audioBlobs = [];
+            for (const chunk of chunks) {
+                const url = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=gtx&tl=bn&q=${encodeURIComponent(chunk)}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('নেটওয়ার্ক বা সার্ভার ত্রুটি');
+                const blob = await res.blob();
+                audioBlobs.push(blob);
+            }
+
+            const finalBlob = new Blob(audioBlobs, { type: 'audio/mpeg' });
+            const downloadUrl = URL.createObjectURL(finalBlob);
+
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = `announcement_${Date.now()}.mp3`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(downloadUrl), 2000);
+
+            dlStatus.innerText = '✅ অডিও ফাইলটি সফলভাবে ফোনের Downloads ফোল্ডারে সেভ হয়েছে!';
+        } catch (err) {
+            dlStatus.innerText = '⚠️ সরাসরি ডাউনলোডে সমস্যা হলে ফোনের Screen Recorder চালু করে "প্রচার শুরু করুন" চাপুন।';
+            alert('অডিও ডাউনলোডে সাময়িক সমস্যা হয়েছে। ইন্টারনেট সংযোগ চেক করে আবার চেষ্টা করুন।');
+        } finally {
+            dlBtn.disabled = false;
+            dlBtn.innerHTML = '📥 অডিও ফাইল ডাউনলোড করুন (MP3/WAV)';
+        }
+    }
+
+    window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.getVoices();
+    };
+</script>
+</body>
+</html>
